@@ -21,6 +21,7 @@ TABLE_MAP = {
     "notes": "notes",
     "alerts": "alerts",
     "links": "links",
+    "hs": "highschool",  # NEW: תיכון
 }
 ALLOWED_TABS = set(TABLE_MAP.keys())
 
@@ -52,8 +53,8 @@ def fetch_settings() -> Dict[str, Any]:
     with _connect() as conn:
         row = conn.execute(
             """
-            SELECT id, tab_home, tab_docs, tab_tasks, tab_notes, tab_alerts, tab_links,
-                   home_title, home_description
+            SELECT id, tab_home, tab_docs, tab_tasks, tab_notes, tab_alerts, tab_links, tab_highschool,
+            home_title, home_description
             FROM main_settings
             ORDER BY id LIMIT 1
             """
@@ -82,6 +83,7 @@ def get_tabs_config(settings: Dict[str, Any]) -> List[Dict[str, str]]:
         {"id": "notes", "label": settings["tab_notes"], "icon": "bi bi-journal-text"},
         {"id": "alerts", "label": settings["tab_alerts"], "icon": "bi bi-bell"},
         {"id": "links", "label": settings["tab_links"], "icon": "bi bi-link-45deg"},
+        {"id": "hs",   "label": settings["tab_highschool"], "icon": "bi bi-mortarboard"},  # תיכון
     ]
 
 

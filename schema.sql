@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT UNIQUE NOT NULL
 );
 
--- Main settings
 CREATE TABLE IF NOT EXISTS main_settings (
   id INTEGER PRIMARY KEY,
   tab_home  TEXT NOT NULL,
@@ -15,16 +14,18 @@ CREATE TABLE IF NOT EXISTS main_settings (
   tab_notes TEXT NOT NULL,
   tab_alerts TEXT NOT NULL,
   tab_links TEXT NOT NULL,
+  tab_highschool TEXT NOT NULL,
   home_title TEXT,
   home_description TEXT
 );
 
--- Six content tables (same schema)
+-- home_items
 CREATE TABLE IF NOT EXISTS home_items (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -33,11 +34,13 @@ CREATE TABLE IF NOT EXISTS home_items (
   additional_info TEXT
 );
 
+-- docs
 CREATE TABLE IF NOT EXISTS docs (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -46,11 +49,13 @@ CREATE TABLE IF NOT EXISTS docs (
   additional_info TEXT
 );
 
+-- tasks
 CREATE TABLE IF NOT EXISTS tasks (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -59,11 +64,13 @@ CREATE TABLE IF NOT EXISTS tasks (
   additional_info TEXT
 );
 
+-- notes
 CREATE TABLE IF NOT EXISTS notes (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -72,11 +79,13 @@ CREATE TABLE IF NOT EXISTS notes (
   additional_info TEXT
 );
 
+-- alerts
 CREATE TABLE IF NOT EXISTS alerts (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -85,11 +94,28 @@ CREATE TABLE IF NOT EXISTS alerts (
   additional_info TEXT
 );
 
+-- links
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY,
-  corese_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
   teacher_name TEXT NOT NULL,
   intended_for TEXT NOT NULL,
+  course_info TEXT,
+  requirments TEXT,
+  category TEXT,
+  allow_valenteres INTEGER NOT NULL,
+  valentieres_age TEXT,
+  max_valetires INTEGER,
+  additional_info TEXT
+);
+
+-- highschool
+CREATE TABLE IF NOT EXISTS highschool (
+  id INTEGER PRIMARY KEY,
+  course_name TEXT NOT NULL,
+  teacher_name TEXT NOT NULL,
+  intended_for TEXT NOT NULL,
+  course_info TEXT,
   requirments TEXT,
   category TEXT,
   allow_valenteres INTEGER NOT NULL,
@@ -200,4 +226,20 @@ FOR EACH ROW
 WHEN NEW.category IS NOT NULL AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.name = NEW.category)
 BEGIN
   SELECT RAISE(ABORT, 'Invalid category for links');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_highschool_validate_category_insert
+BEFORE INSERT ON highschool
+FOR EACH ROW
+WHEN NEW.category IS NOT NULL AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.name = NEW.category)
+BEGIN
+  SELECT RAISE(ABORT, 'Invalid category for highschool');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_highschool_validate_category_update
+BEFORE UPDATE ON highschool
+FOR EACH ROW
+WHEN NEW.category IS NOT NULL AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.name = NEW.category)
+BEGIN
+  SELECT RAISE(ABORT, 'Invalid category for highschool');
 END;

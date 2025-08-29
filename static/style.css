@@ -1,0 +1,57 @@
+/* Hebrew-friendly defaults */
+:root {
+  --focus-ring: 0 0 0 .2rem rgba(13,110,253,.25);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Heebo', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Hebrew", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* Sidenav */
+.sidenav {
+  border-left: 1px solid rgba(0,0,0,.05);
+  min-height: 100vh;
+  background: #fff;
+  padding-top: 1rem;
+}
+
+/* Bottom tab nav */
+.bottom-tab-nav {
+  background: #fff;
+  border-top: 1px solid rgba(0,0,0,.075);
+  box-shadow: 0 -4px 12px rgba(0,0,0,.06);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 1030;
+}
+.bottom-tab-nav .nav-link {
+  padding: .6rem .25rem .5rem;
+  font-size: .9rem;
+}
+.bottom-tab-nav .tab-label {
+  display: block;
+  font-size: .75rem;
+}
+
+/* Cards */
+.card {
+  border: 1px solid rgba(0,0,0,.08);
+}
+.card .badge { white-space: nowrap; }
+
+/* Focus visible for keyboard users */
+a:focus-visible, button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Smooth collapse animation tweak */
+.collapsing {
+  transition: height .25s ease;
+}
+
+/* Trim extra space under the home header/lead */
+#home-content h1 { margin-bottom: .5rem; }
+#home-content .lead { margin-bottom: 0; }

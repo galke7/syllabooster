@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidenav (lg+) -->
+    <nav class="col-lg-2 d-none d-lg-block sidenav" role="tablist" aria-label="Main navigation">
+      <div class="nav flex-column nav-pills">
+        {% for tab in tabs_config %}
+        <a class="nav-link text-end {% if tab.id == active_tab %}active{% endif %}"
+           href="?tab={{ tab.id }}"
+           data-tab="{{ tab.id }}"
+           id="sidenav-tab-{{ tab.id }}"
+           role="tab"
+           aria-controls="content-panel"
+           aria-selected="{{ 'true' if tab.id == active_tab else 'false' }}">
+           <i class="{{ tab.icon }} ms-2"></i>
+           {{ tab.label }}
+        </a>
+        {% endfor %}
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="col-lg-10 ms-auto p-3 p-md-4" role="main">
+      <div id="content-panel">
+
+        <!-- Home (server-rendered) -->
+        <section id="home-content" class="{{ 'd-none' if active_tab != 'home' else '' }}">
+          <h1 class="mb-3">{{ settings.home_title }}</h1>
+          <p class="lead" dir="auto">{{ settings.home_description }}</p>
+        </section>
+
+        <!-- Dynamic List -->
+        <section id="list-content" class="{{ 'd-none' if active_tab == 'home' else '' }}">
+          <div id="items-container" class="row row-cols-1 g-4">
+            <!-- Cards injected here -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="text-center p-5 d-none">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <h4 class="mt-3">אין פריטים להצגה</h4>
+            <p class="text-muted">לא נמצאו נתונים עבור קטגוריה זו.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Bottom Tab Bar (mobile) -->
+<nav class="d-lg-none nav nav-pills nav-fill fixed-bottom bottom-tab-nav" role="tablist" aria-label="Main navigation">
+  {% for tab in tabs_config %}
+  <a class="nav-link {% if tab.id == active_tab %}active{% endif %}"
+     href="?tab={{ tab.id }}"
+     data-tab="{{ tab.id }}"
+     id="bottomnav-tab-{{ tab.id }}"
+     role="tab"
+     aria-controls="content-panel"
+     aria-selected="{{ 'true' if tab.id == active_tab else 'false' }}">
+     <i class="{{ tab.icon }}"></i>
+     <span class="tab-label">{{ tab.label }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const allowedTabs = ['home','docs','tasks','notes','alerts','links'];
+
+  function getTabFromURL() {
+    const p = new URLSearchParams(window.location.search);
+    const t = (p.get('tab') || '').trim().toLowerCase();
+    return allowedTabs.includes(t) ? t : 'home';
+  }
+
+  function toggleSections(tab) {
+    const home = document.getElementById('home-content');
+    const list = document.getElementById('list-content');
+    if (!home || !list) return;
+    if (tab === 'home') {
+      home.classList.remove('d-none');
+      list.classList.add('d-none');
+    } else {
+      home.classList.add('d-none');
+      list.classList.remove('d-none');
+    }
+  }
+
+  function setActiveNav(tab) {
+    document.querySelectorAll('[data-tab]').forEach(el => {
+      const isActive = el.getAttribute('data-tab') === tab;
+      el.classList.toggle('active', isActive);
+      el.setAttribute('aria-current', isActive ? 'page' : 'false');
+      el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+  }
+
+  function safeText(v) { return (v === null || v === undefined) ? '' : String(v); }
+
+  function renderList(rows) {
+    const container = document.getElementById('items-container');
+    const empty = document.getElementById('empty-state');
+    container.innerHTML = '';
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      empty.classList.remove('d-none');
+      return;
+    }
+    empty.classList.add('d-none');
+
+    rows.forEach((item, idx) => {
+      const id = `item-${safeText(item.id) || idx}`;
+      const collapseId = `collapse-${id}`;
+      const allow = item.allow_valenteres ? 'כן' : 'לא';
+      const badge = item.category ? `<span class="badge text-bg-secondary ms-2">${safeText(item.category)}</span>` : '';
+
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `
+        <div class="card shadow-sm h-100" role="region" aria-labelledby="hdr-${id}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="pe-2">
+                <h5 id="hdr-${id}" class="card-title mb-1" dir="auto"><strong>${safeText(item.corese_name)}</strong></h5>
+                <div class="card-subtitle text-muted" dir="auto">${safeText(item.teacher_name)}</div>
+              </div>
+              ${badge}
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-outline-primary btn-sm" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#${collapseId}"
+                      aria-expanded="false" aria-controls="${collapseId}">
+                הצג פרטים
+              </button>
+            </div>
+            <div id="${collapseId}" class="collapse mt-3" tabindex="-1">
+              <dl class="row mb-0">
+                <dt class="col-4 col-md-3">מיועד ל</dt>
+                <dd class="col-8 col-md-9" dir="auto">${safeText(item.intended_for)}</dd>
+                <dt class="col-4 col-md-3">דרישות</dt>
+                <dd class="col-8 col-md-9" dir="auto">${safeText(item.requirments)}</dd>
+                <dt class="col-4 col-md-3">מתנדבים</dt>
+                <dd class="col-8 col-md-9">${allow}</dd>
+                <dt class="col-4 col-md-3">גיל מתנדבים</dt>
+                <dd class="col-8 col-md-9" dir="auto">${safeText(item.valentieres_age)}</dd>
+                <dt class="col-4 col-md-3">מקס׳ מתנדבים</dt>
+                <dd class="col-8 col-md-9">${safeText(item.max_valetires)}</dd>
+                <dt class="col-4 col-md-3">מידע נוסף</dt>
+                <dd class="col-8 col-md-9" dir="auto">${safeText(item.additional_info)}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      `;
+      const collapseEl = col.querySelector(`#${collapseId}`);
+      const btn = col.querySelector('[data-bs-toggle="collapse"]');
+      collapseEl.addEventListener('shown.bs.collapse', () => { btn.setAttribute('aria-expanded','true'); btn.textContent='הסתר פרטים'; });
+      collapseEl.addEventListener('hidden.bs.collapse', () => { btn.setAttribute('aria-expanded','false'); btn.textContent='הצג פרטים'; });
+      document.getElementById('items-container').appendChild(col);
+    });
+  }
+
+  async function loadTab(tab) {
+    try {
+      toggleSections(tab);             // <-- this hides/shows home vs. list
+      if (tab === 'home') {
+        setActiveNav(tab);
+        return;
+      }
+      const res = await fetch(`/api/${tab}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = await res.json();
+      renderList(rows);
+      setActiveNav(tab);
+    } catch (e) {
+      console.error('Load failed:', e);
+      const toastEl = document.getElementById('load-error');
+      if (toastEl) {
+        toastEl.classList.remove('d-none');
+        new bootstrap.Toast(toastEl).show();
+      }
+    }
+  }
+
+  // SPA navigation that also keeps ?tab=... in the URL
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      const tab = el.getAttribute('data-tab');
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      history.pushState({tab}, '', url);
+      loadTab(tab);
+    });
+  });
+
+  window.addEventListener('popstate', (ev) => {
+    const tab = (ev.state && ev.state.tab) ? ev.state.tab : getTabFromURL();
+    loadTab(tab);
+  });
+
+  const initial = getTabFromURL();
+  history.replaceState({tab: initial}, '', window.location.href);
+  loadTab(initial);
+});
+</script>
+{% endblock %}

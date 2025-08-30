@@ -33,18 +33,14 @@ pip install -r requirements.txt
 3.	Initialize the SQLite database
 ```bash
 # Create app.db from schema + seed (requires sqlite3 CLI on PATH)
-sqlite3 app.db < schema.sql
-sqlite3 app.db < seed.sql
+sqlite3 app/app.db < schema.sql
+sqlite3 app/app.db < seed.sql
 ```
 4.	Run the app (choose whichever fits your setup)
 ```bash
-# Option A: direct
-python app.py
-```
-
-```bash
 # Option B: Flask runner
 export FLASK_APP=app
+export DB_PATH="$(pwd)/app/app.db"
 flask run
 ```
 	5.	Open in your browser

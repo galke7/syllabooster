@@ -84,13 +84,13 @@ def fetch_settings() -> Dict[str, Any]:
 def get_tabs_config(settings: Dict[str, Any]) -> List[Dict[str, str]]:
     # Icons: Bootstrap Icons
     return [
-        {"id": "home", "label": settings["tab_home"], "icon": "bi bi-house"},
-        {"id": "docs", "label": settings["tab_docs"], "icon": "bi bi-file-text"},
-        {"id": "tasks", "label": settings["tab_tasks"], "icon": "bi bi-check2-square"},
-        {"id": "notes", "label": settings["tab_notes"], "icon": "bi bi-journal-text"},
-        {"id": "alerts", "label": settings["tab_alerts"], "icon": "bi bi-bell"},
-        {"id": "links", "label": settings["tab_links"], "icon": "bi bi-link-45deg"},
-        {"id": "hs",   "label": settings["tab_highschool"], "icon": "bi bi-mortarboard"},  # תיכון
+        {"id": "home", "label": settings["tab_home"], "icon": "bi bi-house"},                       # ראשי
+        {"id": "docs", "label": settings["tab_docs"], "icon": "bi bi-chat-heart-fill"},             # גן
+        {"id": "tasks", "label": settings["tab_tasks"], "icon": "bi bi-file-earmark-music-fill"},   # בית א ב
+        {"id": "notes", "label": settings["tab_notes"], "icon": "bi bi-gear-fill"},                 # בית ג ד
+        {"id": "alerts", "label": settings["tab_alerts"], "icon": "bi bi-stars"},                   # בית ה ו
+        {"id": "links", "label": settings["tab_links"], "icon": "bi bi-hurricane"},                 # חטב
+        {"id": "hs",   "label": settings["tab_highschool"], "icon": "bi bi-shift"},                 # תיכון
     ]
 
 

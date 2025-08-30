@@ -6,18 +6,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 tzdata ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
+# ---------- Builder ----------
 WORKDIR /app
-
-# Install Python deps first for better layer cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy only what we need to build the DB
 COPY schema.sql seed.sql ./
-
-# Build app.db from schema + seed
-RUN sqlite3 /app.db < /app/schema.sql && \
-    sqlite3 /app.db < /app/seed.sql
+# Build DB under /app
+RUN sqlite3 /app/app.db < /app/schema.sql && \
+    sqlite3 /app/app.db < /app/seed.sql && \
+    sqlite3 /app/app.db "PRAGMA journal_mode=DELETE;"    # avoid WAL files on read-only FS
 
 # ---------- Final runtime image ----------
 FROM python:3.11-slim
@@ -33,12 +30,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DB_PATH=/app.db
 
 WORKDIR /app
-
-# Copy code and static/templates
 COPY . .
-
-# Get the DB and installed site-packages from builder
-COPY --from=builder /app.db /app.db
+COPY --from=builder /app/app.db /app/app.db
+RUN chmod 0644 /app/app.db
+ENV PORT=8080 \
+    DB_PATH=/app/app.db
+    
 # Install deps again in final image (smaller than copying site-packages)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \

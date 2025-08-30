@@ -178,5 +178,129 @@ curl -s http://localhost:8080/ | head
 curl -s http://localhost:8080/api/docs | head
 ```
 
+---
+
+## Deploying to Cloud Run (read-only SQLite) + Custom Domain (CNAME via Cloud DNS)
+
+This app is containerized and runs great on **Cloud Run** with a bundled, read-only SQLite DB. Below are end-to-end commands to build, deploy, keep costs low, and map a custom domain using **Cloud DNS** (no static IP / no load balancer).
+
+### Prerequisites
+- Google Cloud project + owner/editor access
+- Artifact Registry & Cloud Run APIs enabled
+- `gcloud` CLI authenticated
+- Domain you control (for custom domain), hosted in **Cloud DNS**
+
+### 1) Build and push the image
+```bash
+# Set once per shell
+PROJECT_ID="YOUR_PROJECT_ID"
+REGION="us-central1"                     # choose a supported Cloud Run region
+REPO="syllabooster"                      # Artifact Registry repo name
+TAG="$(date +%Y%m%d-%H%M%S)"
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/syllabooster:${TAG}"
+
+# (One-time) create repo
+gcloud artifacts repositories create "$REPO" \
+  --repository-format=docker \
+  --location="$REGION" \
+  --description="Syllabooster containers"
+
+# Auth Docker to Artifact Registry
+gcloud auth configure-docker "${REGION}-docker.pkg.dev" -q
+
+# Build (Apple Silicon: use linux/amd64)
+docker buildx build --platform linux/amd64 -t "$IMAGE" .
+
+# Push
+docker push "$IMAGE"
+```
+### 12) Deploy to Cloud Run
+```bash
+SERVICE="syllabooster"
+
+gcloud run deploy "$SERVICE" \
+  --image "$IMAGE" \
+  --region "$REGION" \
+  --allow-unauthenticated \
+  --port 8080 \
+  --set-env-vars DB_PATH=/app/app.db
+```
+3) Keep costs low (scale-up-to-three, limit max instances)
+```bash
+# Route 100% traffic to the latest revision (avoid old revisions serving traffic)
+gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest
+
+# Guardrail: at most 3 instance in dev; scales to zero when idle
+gcloud run services update "$SERVICE" --region "$REGION" \
+  --max-instances 3 --min-instances 0 --concurrency 80
+```
+
+Notes
+	•	Revisions with 0% traffic cost $0 in compute.
+	•	With min-instances=0, the service scales to zero when idle (no compute cost).
+	•	Artifact Registry stores your image layers (small storage cost).
+
+4) Custom domain (CNAME) without static IP (Cloud Run Domain Mapping + Cloud DNS)
+
+4.1 Verify the base domain (one-time)
+# See domains already verified for your account
+gcloud domains list-user-verified
+
+# If needed, start verification in Search Console (follow instructions)
+gcloud domains verify yourdomain.com
+
+4.2 Create the Cloud Run domain mapping
+APP_HOST="app.yourdomain.com"
+
+gcloud beta run domain-mappings create \
+  --region "$REGION" \
+  --service "$SERVICE" \
+  --domain "$APP_HOST"
+
+# This prints required DNS records. For a subdomain it’s typically:
+# NAME: app, TYPE: CNAME, DATA: ghs.googlehosted.com.
+
+4.3 Add the DNS record in Cloud DNS (CLI)
+ZONE="your-cloud-dns-zone-name"          # zone that serves yourdomain.com
+FQDN="${APP_HOST}."
+TARGET="ghs.googlehosted.com."
+
+# Check conflicts (there must be no other records at this exact name)
+gcloud dns record-sets list --zone="$ZONE" --name="$FQDN"
+
+# Add the CNAME
+gcloud dns record-sets transaction start --zone="$ZONE"
+gcloud dns record-sets transaction add \
+  --zone="$ZONE" --name="$FQDN" --type=CNAME --ttl=300 "$TARGET"
+gcloud dns record-sets transaction execute --zone="$ZONE"
+
+4.4 Verify DNS & certificate
+# DNS
+dig +short CNAME "$FQDN"
+dig +short "$FQDN"
+
+# Domain mapping & managed cert status
+gcloud beta run domain-mappings describe \
+  --region "$REGION" \
+  --domain "$APP_HOST" \
+  --format='yaml(status,resourceRecords)'
+
+# Test HTTPS
+curl -I "https://${APP_HOST}/health"
+
+The managed certificate typically becomes Active within ~15–30 minutes after DNS is correct.
+
+5) Yearly DB refresh (CSV → seed.sql → image)
+	•	Update seed.sql from your CSV:
+
+python3 update-db.py -f path/to/data.csv --no-rebuild
+
+	Rebuild & push a new image; redeploy (steps 1–2). The Docker build regenerates /app/app.db from schema.sql + seed.sql.
+
+6) Troubleshooting
+	•	500 on Cloud Run → ensure the SQLite path matches and is read-only:
+	•	DB_PATH=/app/app.db and the code connects with sqlite URI mode=ro&immutable=1.
+	•	DNS not working → check dig, ensure the CNAME exists and no conflicting records at that name.
+	•	Old revision serving traffic → run gcloud run services update-traffic ... --to-latest.
 
 Enjoy! 🙂

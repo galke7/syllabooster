@@ -21,7 +21,7 @@ import sys
 from typing import Dict, List, Optional, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_DB = os.path.join(PROJECT_ROOT, "app.db")
+DEFAULT_DB = os.path.join(PROJECT_ROOT, "app/app.db")
 DEFAULT_SCHEMA = os.path.join(PROJECT_ROOT, "schema.sql")
 DEFAULT_SEED = os.path.join(PROJECT_ROOT, "seed.sql")
 
@@ -69,7 +69,7 @@ TRUTHY = {"1", "true", "yes", "y", "on", "כן", "נכון"}
 def parse_args():
     ap = argparse.ArgumentParser(description="Replace a tab's seed data from a CSV and rebuild the DB.")
     ap.add_argument("-f", "--file", required=True, help="Path to CSV (UTF-8).")
-    ap.add_argument("--db", default=DEFAULT_DB, help="Path to SQLite DB (default: app.db)")
+    ap.add_argument("--db", default=DEFAULT_DB, help="Path to SQLite DB (default: /app/app.db)")
     ap.add_argument("--schema", default=DEFAULT_SCHEMA, help="Path to schema.sql")
     ap.add_argument("--seed", default=DEFAULT_SEED, help="Path to seed.sql")
     ap.add_argument("--no-rebuild", action="store_true", help="Only update seed.sql, do not rebuild DB")

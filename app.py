@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
+import os
 import json
 import sqlite3
 import time
 from typing import Dict, Any, List
 from flask import Flask, render_template, request, Response, abort
 
-DB_PATH = "app.db"
+# Use the DB path baked into the container image (overrideable via env)
+DB_PATH = os.getenv("DB_PATH", "/app/app.db")
+# Open read-only & immutable so SQLite never tries to write WAL/journal files
+CONNECT_URI = f"file:{DB_PATH}?mode=ro&immutable=1"
+
 CACHE_TTL_SECONDS = 60
 
 app = Flask(__name__, static_url_path="/static", static_folder="static", template_folder="templates")
@@ -27,7 +32,8 @@ ALLOWED_TABS = set(TABLE_MAP.keys())
 
 
 def _connect():
-    conn = sqlite3.connect(DB_PATH)
+    # Read-only, immutable connection; safe on Cloud Run's read-only image FS
+    conn = sqlite3.connect(CONNECT_URI, uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
@@ -54,7 +60,7 @@ def fetch_settings() -> Dict[str, Any]:
         row = conn.execute(
             """
             SELECT id, tab_home, tab_docs, tab_tasks, tab_notes, tab_alerts, tab_links, tab_highschool,
-            home_title, home_description
+                   home_title, home_description
             FROM main_settings
             ORDER BY id LIMIT 1
             """
@@ -68,6 +74,7 @@ def fetch_settings() -> Dict[str, Any]:
             "tab_notes": "פתקים",
             "tab_alerts": "התראות",
             "tab_links": "קישורים",
+            "tab_highschool": "תיכון",
             "home_title": "ברוכים הבאים",
             "home_description": "אנא הריצו את קבצי schema.sql ו-seed.sql כדי לטעון נתונים לדוגמה.",
         }
@@ -100,7 +107,7 @@ def fetch_rows_for_tab(tab: str) -> List[Dict[str, Any]]:
     with _connect() as conn:
         rows = conn.execute(f"SELECT * FROM {table} ORDER BY id DESC").fetchall()
 
-    data = []
+    data: List[Dict[str, Any]] = []
     for r in rows:
         d = dict(r)
         # Convert 0/1 to True/False in JSON
@@ -154,6 +161,6 @@ def health():
 
 
 if __name__ == "__main__":
-    # Option 1: `python app.py`
-    app.run(host="127.0.0.1", port=5000, debug=False)
-    # Option 2: `FLASK_APP=app.py flask run`
+    # Allows local run: respects $PORT (Cloud Run) but defaults to 5000
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=False)

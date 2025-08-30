@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache/
+*.coverage
+.mypy_cache/
+
+# Envs & tools
+.env
+venv/
+.venv/
+pip-wheel-metadata/
+
+# VCS/IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Local artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.log
+dist/
+build/
+node_modules/
+
+# OS
+.DS_Store

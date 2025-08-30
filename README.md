@@ -151,4 +151,32 @@ Notes
 	•	The Bootstrap/Icons/Fonts are loaded via CDN without SRI; for production you may want to pin versions and/or self-host.
 	•	Everything is UTF-8; CSVs should be UTF-8 (with BOM tolerated).
 
+
+
+---
+Using Docker
+
+Yearly DB update workflow (using your update-db.py)
+	1.	Run the script on your workstation to update seed.sql from the CSV (skip DB rebuild—Docker will do it):
+```bash
+python3 update-db.py -f 2025-GAN.csv --no-rebuild
+```
+	2. Rebuild the image
+```bash
+docker build -t syllabooster:local .
+```
+	3. Run the container locally
+```bash
+docker run --rm -p 8080:8080 \
+  -e PORT=8080 \
+  -e DB_PATH=/app/app.db \
+  syllabooster:local
+```
+	4. Test
+```bash
+curl -s http://localhost:8080/ | head
+curl -s http://localhost:8080/api/docs | head
+```
+
+
 Enjoy! 🙂
